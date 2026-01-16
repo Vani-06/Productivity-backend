@@ -14,8 +14,22 @@ exports.createTask = async (req, res) => {
 // READ: Get only the logged-in user's tasks
 exports.getTasks = async (req, res) => {
   try {
-    // Filter: Find tasks where user matches the person logged in
-    const tasks = await Task.find({ user: req.user.id });
+    // 1. Start with the "Must-Have": The Task must belong to the User
+    let query = { user: req.user.id };
+
+    // 2. Add Filtering (if the user provided it in the URL)
+    if (req.query.status) query.status = req.query.status;
+    if (req.query.priority) query.priority = req.query.priority;
+
+    // 3. Add Search (Search for keywords in the Title)
+    if (req.query.search) {
+      // 'i' makes it case-insensitive (Search 'API' or 'api' works the same)
+      query.title = { $regex: req.query.search, $options: 'i' };
+    }
+
+    // 4. Run the query
+    const tasks = await Task.find(query).sort({ deadline: 1 }); // Sort by closest deadline first
+    
     res.json(tasks);
   } catch (err) {
     res.status(500).json({ error: err.message });
