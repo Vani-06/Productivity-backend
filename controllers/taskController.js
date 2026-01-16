@@ -39,13 +39,16 @@ exports.getTasks = async (req, res) => {
 // UPDATE: Change a task (mark as completed, change deadline, etc.)
 exports.updateTask = async (req, res) => {
   try {
-    // Safety check: ensure the task belongs to the user
+    // This findOneAndUpdate ensures the task _id exists AND belongs to the user
     const task = await Task.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.id }, 
-      req.body, 
-      { new: true }
+      { _id: req.params.id, user: req.user.id },
+      req.body,
+      { new: true, runValidators: true }
     );
-    if (!task) return res.status(404).json({ message: "Task not found" });
+
+    if (!task) {
+      return res.status(404).json({ message: "Task not found or unauthorized" });
+    }
     res.json(task);
   } catch (err) {
     res.status(400).json({ error: err.message });
